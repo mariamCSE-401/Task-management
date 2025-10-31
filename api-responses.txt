@@ -1,0 +1,21 @@
+GET /tasks
+Response:
+[
+  { "id": 1, "title": "Learn Node.js", "completed": false, "priority": "high", "createdAt": "2025-10-30T10:00:00.000Z" },
+  { "id": 2, "title": "Build REST API", "completed": false, "priority": "medium", "createdAt": "2025-10-30T12:00:00.000Z" },
+  { "id": 3, "title": "Write unit tests", "completed": false, "priority": "low", "createdAt": "2025-10-31T09:30:00.000Z" },
+  { "id": 4, "title": "Set up CI/CD", "completed": false, "priority": "medium", "createdAt": "2025-10-31T11:00:00.000Z" },
+  { "id": 5, "title": "Deploy to production", "completed": false, "priority": "high", "createdAt": "2025-10-31T14:00:00.000Z" }
+]
+
+GET /task/2
+Response:
+{ "id": 2, "title": "Build REST API", "completed": false, "priority": "medium", "createdAt": "2025-10-30T12:00:00.000Z" }
+
+GET /task/99
+Response:
+{ "error": "Task not found" }
+
+GET /health
+Response:
+{ "status": "healthy", "uptime": 23.452 }   // uptime changes every time you run the server
