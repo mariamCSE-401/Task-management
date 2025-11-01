@@ -12,7 +12,7 @@ GET /task/2
 Response:
 { "id": 2, "title": "Build REST API", "completed": false, "priority": "medium", "createdAt": "2025-10-30T12:00:00.000Z" }
 
-GET /task/99
+GET /task/999
 Response:
 { "error": "Task not found" }
 
@@ -22,4 +22,4 @@ Response:
 
 GET /health
 Response:
-{ "status": "healthy", "uptime": 23.452 }   // uptime changes every time you run the server
+{ "status": "healthy", "uptime": 23.452 }
