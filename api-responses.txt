@@ -16,6 +16,10 @@ GET /task/99
 Response:
 { "error": "Task not found" }
 
+GET /task/abc
+Response:
+{ "error": "Invalid ID format" }
+
 GET /health
 Response:
 { "status": "healthy", "uptime": 23.452 }   // uptime changes every time you run the server
