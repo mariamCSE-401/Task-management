@@ -1,33 +1,100 @@
 const express = require('express');
 const router = express.Router();
-
-const tasks = [
-  { id: 1, title: 'Learn Node.js', completed: false, priority: 'high', createdAt: new Date('2025-10-30T10:00:00') },
-  { id: 2, title: 'Build REST API', completed: false, priority: 'medium', createdAt: new Date('2025-10-30T12:00:00') },
-  { id: 3, title: 'Write unit tests', completed: false, priority: 'low', createdAt: new Date('2025-10-31T09:30:00') },
-  { id: 4, title: 'Set up CI/CD', completed: false, priority: 'medium', createdAt: new Date('2025-10-31T11:00:00') },
-  { id: 5, title: 'Deploy to production', completed: false, priority: 'high', createdAt: new Date('2025-10-31T14:00:00') }
-];
+const db = require('../config/db'); // should export a mysql2/promise pool or connection
 
 // GET all tasks
-router.get('/', (req, res) => {
-  res.json(tasks);
+router.get('/', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM tasks ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /tasks error:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
-// GET task by ID with error handling
-router.get('/:id', (req, res) => {
-  const taskId = parseInt(req.params.id);
-
-  if (isNaN(taskId)) {
-    return res.status(400).json({ error: 'Invalid ID format' });
+// POST create new task
+router.post('/', async (req, res) => {
+  const { title, description } = req.body;
+  if (!title || title.trim() === '') {
+    return res.status(400).json({ error: 'Title is required' });
   }
 
-  const task = tasks.find(t => t.id === taskId);
-  if (!task) {
-    return res.status(404).json({ error: 'Task not found' });
+  try {
+    const sql = 'INSERT INTO tasks (title, description) VALUES (?, ?)';
+    const [result] = await db.query(sql, [title.trim(), description || null]);
+    const [newTaskRows] = await db.query('SELECT * FROM tasks WHERE id = ?', [result.insertId]);
+    res.status(201).json(newTaskRows[0]);
+  } catch (err) {
+    console.error('POST /tasks error:', err);
+    res.status(500).json({ error: 'Failed to create task' });
   }
+});
 
-  res.json(task);
+// PUT update task
+router.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title, description, status } = req.body;
+
+  try {
+    const updates = [];
+    const values = [];
+
+    if (title !== undefined) {
+      if (title === null || (typeof title === 'string' && title.trim() === '')) {
+        return res.status(400).json({ error: 'Title cannot be empty' });
+      }
+      updates.push('title = ?');
+      values.push(title);
+    }
+
+    if (description !== undefined) {
+      updates.push('description = ?');
+      values.push(description);
+    }
+
+    if (status !== undefined) {
+      updates.push('status = ?');
+      values.push(status);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    // push id for the WHERE clause
+    values.push(id);
+
+    // NOTE: use template literal to build the UPDATE string correctly
+    const sql = `UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`;
+    const [result] = await db.query(sql, values);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    const [updatedRows] = await db.query('SELECT * FROM tasks WHERE id = ?', [id]);
+    res.json(updatedRows[0]);
+  } catch (err) {
+    console.error('PUT /tasks/:id error:', err);
+    res.status(500).json({ error: 'Failed to update task' });
+  }
+});
+
+// DELETE task
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await db.query('DELETE FROM tasks WHERE id = ?', [id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    // 204 No Content
+    res.status(204).send();
+  } catch (err) {
+    console.error('DELETE /tasks/:id error:', err);
+    res.status(500).json({ error: 'Failed to delete task' });
+  }
 });
 
 module.exports = router;

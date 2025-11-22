@@ -2,9 +2,12 @@ const express = require('express');
 const app = express();
 const port = 3000;
 
-const taskRoutes = require('./routes/tasks'); // নতুন routes import
+const taskRoutes = require('./routes/tasks');
 
-app.use(express.json()); // JSON parsing middleware
+app.use(express.json());
+
+// Use tasks router (ONLY ONCE)
+app.use('/tasks', taskRoutes);
 
 // Root route
 app.get('/', (req, res) => {
@@ -19,10 +22,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Use /tasks routes from tasks.js
-app.use('/tasks', taskRoutes);
-
-// Server start
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
