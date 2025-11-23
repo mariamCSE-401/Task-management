@@ -1,0 +1,24 @@
+const { createLogger, format, transports } = require('winston');
+const path = require('path');
+const fs = require('fs');
+
+// Ensure logs folder exists
+const logDir = path.join(__dirname, '../../logs');
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir);
+}
+
+// Logger configuration
+const logger = createLogger({
+  level: 'error',
+  format: format.combine(
+    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    format.printf(info => `${info.timestamp} [${info.level.toUpperCase()}]: ${info.message}`)
+  ),
+  transports: [
+    new transports.File({ filename: path.join(logDir, 'error.log') }) // logs/error.log
+  ],
+  exitOnError: false,
+});
+
+module.exports = logger;

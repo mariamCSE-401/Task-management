@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db'); 
+const logger = require('../config/logger'); // <-- import Winston logger
 
 // helper to build where clause (includeDeleted = true => only deleted)
 function buildWhereClause({ includeDeleted = false, q = null }) {
@@ -34,7 +35,7 @@ router.get('/', async (req, res) => {
 
     res.json({ totalTasks, totalPages, currentPage: page, limit, data: rows });
   } catch (err) {
-    console.error(err);
+    logger.error(err.stack || err.message);
     res.status(500).json({ error: 'Database error' });
   }
 });
@@ -60,7 +61,7 @@ router.get('/deleted', async (req, res) => {
 
     res.json({ totalTasks, totalPages, currentPage: page, limit, data: rows });
   } catch (err) {
-    console.error(err);
+    logger.error(err.stack || err.message);
     res.status(500).json({ error: 'Database error' });
   }
 });
@@ -77,7 +78,7 @@ router.post('/', async (req, res) => {
     const [rows] = await db.query('SELECT * FROM tasks WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error(err);
+    logger.error(err.stack || err.message);
     res.status(500).json({ error: 'Failed to create task' });
   }
 });
@@ -88,7 +89,11 @@ router.put('/:id', async (req, res) => {
   const { title, description, status } = req.body;
   try {
     const updates = []; const values = [];
-    if (title !== undefined) { if (title === null || (typeof title === 'string' && title.trim() === '')) return res.status(400).json({ error: 'Title cannot be empty' }); updates.push('title = ?'); values.push(title); }
+    if (title !== undefined) { 
+      if (title === null || (typeof title === 'string' && title.trim() === '')) return res.status(400).json({ error: 'Title cannot be empty' }); 
+      updates.push('title = ?'); 
+      values.push(title); 
+    }
     if (description !== undefined) { updates.push('description = ?'); values.push(description); }
     if (status !== undefined) { updates.push('status = ?'); values.push(status); }
     if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
@@ -98,7 +103,7 @@ router.put('/:id', async (req, res) => {
     const [rows] = await db.query('SELECT * FROM tasks WHERE id = ?', [id]);
     res.json(rows[0]);
   } catch (err) {
-    console.error(err);
+    logger.error(err.stack || err.message);
     res.status(500).json({ error: 'Failed to update task' });
   }
 });
@@ -111,7 +116,7 @@ router.delete('/:id', async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Task not found or already deleted' });
     res.status(204).send();
   } catch (err) {
-    console.error(err);
+    logger.error(err.stack || err.message);
     res.status(500).json({ error: 'Failed to delete task' });
   }
 });
@@ -130,10 +135,9 @@ router.put('/:id/restore', async (req, res) => {
     const [rows] = await db.query('SELECT * FROM tasks WHERE id = ?', [id]);
     res.json(rows[0]);
   } catch (err) {
-    console.error(err);
+    logger.error(err.stack || err.message);
     res.status(500).json({ error: 'Failed to restore task' });
   }
 });
-
 
 module.exports = router;
